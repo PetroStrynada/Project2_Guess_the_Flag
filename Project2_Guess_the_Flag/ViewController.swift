@@ -14,16 +14,18 @@ class ViewController: UIViewController {
 
     var countries = [String]()
     var score = 0
+    var highestScore = -10
     var correctAnswer = 0
     let numberOfRounds = 10
     var roundNumber = 1
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        loadHighestScore()
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .pause, target: self, action: #selector(scoreCheck))
 
-        countries += ["estonia", "france", "germany", "ireland", "italy", "monaco", "nigeria", "poland", "spain", "uk", "us"]
+        countries.append(contentsOf: ["estonia", "france", "germany", "ireland", "italy", "monaco", "nigeria", "poland", "spain", "uk", "us"])
 
 //        button1.layer.borderWidth = 1
 //        button2.layer.borderWidth = 1
@@ -37,12 +39,11 @@ class ViewController: UIViewController {
     }
 
     @objc func scoreCheck() {
-        let ac = UIAlertController(title: "Your current score is \(score)", message: nil, preferredStyle: .alert)
+        let ac = UIAlertController(title: "Your current score is \(score)", message: "Record \(highestScore)", preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "Continue", style: .default))
         present(ac, animated: true)
     }
 
-    //TODO: Why ????? action: UIAlertAction!
     func askQuestion(action: UIAlertAction!) {
         countries.shuffle()
         correctAnswer = Int.random(in: 0...2)
@@ -84,10 +85,20 @@ class ViewController: UIViewController {
         }
 
         guard roundNumber != numberOfRounds + 1 else {
-            let ac = UIAlertController(title: "\(title)", message: "\(massage)Your total score \(score)", preferredStyle: .alert)
-            ac.addAction(UIAlertAction(title: "Start new game", style: .default, handler: askQuestion))
-            restartGame()
-            return present(ac, animated: true)
+            if highestScore < score {
+                highestScore = score
+                saveHighestScore()
+                let ac = UIAlertController(title: "New record!", message: "Your total score \(score)", preferredStyle: .alert)
+                ac.addAction(UIAlertAction(title: "Start new game", style: .default, handler: askQuestion))
+                restartGame()
+                return present(ac, animated: true)
+            } else {
+                let ac = UIAlertController(title: "\(title)", message: "\(massage)Your total score \(score)", preferredStyle: .alert)
+                ac.addAction(UIAlertAction(title: "Start new game", style: .default, handler: askQuestion))
+                restartGame()
+                return present(ac, animated: true)
+            }
+
         }
 
         let ac = UIAlertController(title: title, message: massage + scoreMassage, preferredStyle: .alert)
@@ -96,5 +107,34 @@ class ViewController: UIViewController {
 
         present(ac, animated: true)
     }
+
+
+    func loadHighestScore() {
+        let defaults = UserDefaults.standard
+
+        if let savedPicturesShownTimes = defaults.object(forKey: "picturesShownTimes") as? Data {
+            let jsonDecoder = JSONDecoder()
+
+            do {
+                highestScore = try jsonDecoder.decode(Int.self, from: savedPicturesShownTimes)
+            } catch {
+                print("Failed to load pictures shown times")
+            }
+        }
+    }
+
+
+    func saveHighestScore() {
+        let jsonEncoder = JSONEncoder()
+
+        if let saveData = try? jsonEncoder.encode(highestScore) {
+            let defaults = UserDefaults.standard
+            defaults.set(saveData, forKey: "picturesShownTimes")
+        } else {
+            print("Failed to save people.")
+        }
+    }
+
+
 }
 
